@@ -5,20 +5,38 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Try {
 
+    private static ArrayList<String> txt2code(String filename) throws FileNotFoundException {
+        ArrayList<String> code = new ArrayList<String>();
+        FileReader reader = new FileReader(filename);
+        Scanner scan1 = new Scanner(reader);
+        int k = 0;
+        while (scan1.hasNextLine()) {
+            String codes = scan1.nextLine();
+            code.add(codes);
+            k++;
+
+        }
+        return code;
+    }
 
     public static void main(String[] args) throws Exception {
-        Scanner scan = new Scanner(System.in);
-        FileReader reader = new FileReader("notes3.txt");
-        Scanner scan1 = new Scanner(reader);
-        String code = "";
 
-        int i = 725;
+        ArrayList<String> codes = txt2code("notes3.txt");
+
+        Scanner scan = new Scanner(System.in);
+
+
+        int y = 725;
+
         String name = scan.nextLine();
         String sureName = scan.nextLine();
         String group = scan.nextLine();
@@ -32,18 +50,21 @@ public class Try {
         PDPage page = doc.getPage(0);
         PDPageContentStream contentStream = new PDPageContentStream(doc, page);
         contentStream.beginText();
+
         contentStream.setFont(PDType1Font.TIMES_ROMAN, 16);
+        int x = 25;
 
-        while (scan1.hasNextLine()) {
-
-            code = scan1.nextLine();
+        for (String code : codes) {
             contentStream.showText(code);
-            contentStream.newLineAtOffset(25,i);
-            i++;
-            contentStream.newLine();
+            System.out.println(code);
+            contentStream.newLineAtOffset(x, y);
 
+            contentStream.newLine();
+            y++;
+            x++;
 
         }
+
 
         contentStream.endText();
         System.out.println("Content added");
@@ -51,5 +72,14 @@ public class Try {
         doc.save(new File("12345.pdf"));
         doc.close();
         System.out.println("createdocument.pdf written successully");
+
+
+        }
+
+
+
+
     }
-}
+
+
+
