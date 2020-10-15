@@ -1,6 +1,11 @@
+    import com.sun.deploy.net.URLEncoder;
+    import com.sun.jndi.toolkit.url.UrlUtil;
     import org.apache.poi.xwpf.usermodel.*;
 
     import java.io.*;
+    import java.net.URL;
+    import java.net.URLDecoder;
+    import java.nio.charset.StandardCharsets;
     import java.nio.file.Files;
     import java.nio.file.Path;
     import java.nio.file.Paths;
@@ -13,19 +18,21 @@
 
 
 
-        private static ArrayList<String> txt2code(Path filename) throws FileNotFoundException {
+        private static ArrayList<String> txt2code(Path filename) throws FileNotFoundException, UnsupportedEncodingException {
 
             ArrayList<String> code = new ArrayList<String>();
 
 
             FileReader reader = new FileReader(String.valueOf(filename));
             Scanner scan1 = new Scanner(reader);
+            //System.setProperty("console.encoding","CP1251");
 
             int k = 0;
 
             while (scan1.hasNextLine()) {
                 String codes = scan1.nextLine();
-                code.add(codes);
+                String data2 = new String(codes.getBytes("windows-1251"), StandardCharsets.UTF_8);
+                code.add(data2);
                 k++;
 
             }
@@ -69,7 +76,7 @@
         }
 
 
-        private static ArrayList<String> get_goal(File dirPath) throws FileNotFoundException {
+        private static ArrayList<String> get_goal(File dirPath) throws FileNotFoundException, UnsupportedEncodingException {
             File dir = new File(String.valueOf(dirPath));
 
             File[] fileList = dir.listFiles(new FilenameFilter() {
@@ -78,6 +85,7 @@
                 }
             });
             assert fileList != null;
+
             return  txt2code(fileList[0].toPath());
         }
 
@@ -93,7 +101,7 @@
             return String.valueOf((fileList[0].toPath()));
         }
 
-        private static ArrayList<String> get_ext(File dirPath) throws FileNotFoundException {
+        private static ArrayList<String> get_ext(File dirPath) throws FileNotFoundException, UnsupportedEncodingException {
             File dir = new File(String.valueOf(dirPath));
 
             File[] fileList = dir.listFiles(new FilenameFilter() {
@@ -107,7 +115,7 @@
 
 
 
-        private static ArrayList<String> get_task(File dirPath) throws FileNotFoundException {
+        private static ArrayList<String> get_task(File dirPath) throws FileNotFoundException, UnsupportedEncodingException {
             File dir = new File(String.valueOf(dirPath));
 
             File[] fileList = dir.listFiles(new FilenameFilter() {
@@ -121,7 +129,7 @@
 
 
 
-        public static HashMap<Integer, ArrayList<String>> getIntegerArrayListHashMap(String txtPath) throws FileNotFoundException {
+        public static HashMap<Integer, ArrayList<String>> getIntegerArrayListHashMap(String txtPath) throws FileNotFoundException, UnsupportedEncodingException {
             File f = new File(txtPath);
             FilenameFilter textFilter = new FilenameFilter() {
                 public boolean accept(File dir, String name) {
@@ -198,16 +206,17 @@
 
         public static void main(String[] args) throws IOException {
             Scanner scan = new Scanner(System.in);
+            System.setProperty("console.encoding","UTF-8");
 
             System.out.println("Фамилия.И.О.");
-            String sureName = scan.nextLine();//инициалы и фамилия
-
+            String sureName_b = scan.nextLine();//инициалы и фамилия
+            String sureName = new String(sureName_b.getBytes("windows-1251"), "CP866");
             System.out.println("Группа");
-            String group = scan.nextLine();
-
+            String group_b = scan.nextLine();
+            String group = new String(group_b.getBytes("windows-1251"), "CP866");
             System.out.println("Фамилия.И.О. преподавателя");
-            String teach_srnm = scan.nextLine();
-
+            String teach_srnm_b = scan.nextLine();
+            String teach_srnm = new String(teach_srnm_b.getBytes("windows-1251"), "CP866");
 
 
 
@@ -215,11 +224,17 @@
             String txtPath = scan.nextLine();
 
 
+            InputStream inputStream = docx.class.getResourceAsStream("/Prak1_Nikolich_AD_Inbo-06-19.docx");
+            XWPFDocument dc = new XWPFDocument(inputStream);
 
-            Path msWordPath = Paths.get("Prak1_Nikolich_AD_Inbo-06-19.docx");
+
+            //URL pth = ((docx.class.getResource("/Prak1_Nikolich_AD_Inbo-06-19.docx")));
+          //  System.out.println(pth);
+          //  Path msWordPath = (Path) docx.class.getClassLoader().getResource("Prak1_Nikolich_AD_Inbo-06-19.docx")
+            //("src/main/resources/Prak1_Nikolich_AD_Inbo-06-19.docx");
 
 
-            XWPFDocument document = getXwpfDocument(sureName, group, teach_srnm, txtPath, msWordPath );
+            XWPFDocument document = getXwpfDocument(sureName, group, teach_srnm, txtPath, dc);
 
 
             Path path = Paths.get(txtPath);
@@ -244,10 +259,14 @@
                 }
             }
 
+            //inputStream.close();
+            //String userHomeFolder = System.getProperty("user.home");
 
 
-            FileOutputStream outputStream = new FileOutputStream("D:/Apache POI Word Test.docx");
-            System.out.println("D:/Apache POI Word Test.docx"+" возможно где то тут оно лежит. или не лежит");
+
+            System.out.println(" В этой папке лежит отчет " + pathToPortableString(Paths.get(txtPath)));
+            FileOutputStream outputStream = new FileOutputStream(pathToPortableString(Paths.get(txtPath))+"/"+sureName+".docx");
+
             document.write(outputStream);
             outputStream.close();
 
@@ -255,18 +274,37 @@
 
         }
 
+        static public String pathToPortableString(Path p)
+        {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            Path root = p.getRoot();
+            if (root != null)
+            {
+                sb.append(root.toString().replace('\\','/'));
 
-        public static XWPFDocument getXwpfDocument(String sureName, String group, String teach_srnm, String txtPath, Path msWordPath
+            }
+            for (Path element : p)
+            {
+                if (first)
+                    first = false;
+                else
+                    sb.append("/");
+                sb.append(element.toString());
+            }
+            return sb.toString();
+        }
+
+        public static XWPFDocument getXwpfDocument(String sureName, String group, String teach_srnm, String txtPath, XWPFDocument msWordPath
         ) throws IOException {
-            XWPFDocument document = new XWPFDocument(Files.newInputStream(msWordPath));
 
 
-            changename(document,"Surname", sureName +" "+ group);//перестановка имен, нейминг говно надо что то придумать
-            changename(document,"teacher", teach_srnm);
+            changename(msWordPath,"Surname", sureName +" "+ group);//перестановка имен, нейминг говно надо что то придумать
+            changename(msWordPath,"teacher", teach_srnm);
             HashMap<Integer, ArrayList<String>> items = getIntegerArrayListHashMap(txtPath);
 
           //  prac_gener(tsks, cntxts, exts, document, items);
-            return document;
+            return msWordPath;
         }
 
         public static void prac_gener(ArrayList<String> tsks, ArrayList<String> cntxts, ArrayList<String> exts, XWPFDocument document, HashMap<Integer,
